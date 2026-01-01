@@ -10,15 +10,50 @@ use Illuminate\Support\Facades\Storage;
 class ProductController extends Controller
 {
     // GET PRODUCTS (public for users)
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')
-            ->where('status', true)
-            ->latest()
-            ->paginate(10);
+        $query = Product::query();
 
-        return response()->json($products);
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        $sort = $request->get('sort', 'desc');
+        $limit = $request->get('limit', 10);
+
+        $products = $query
+            ->orderBy('price', $sort)
+            ->paginate($limit);
+
+        return response()->json([
+            'data' => $products->items(),
+
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'per_page'     => $products->perPage(),
+                'total_items'  => $products->total(),
+                'total_pages'  => $products->lastPage(),
+                'from'         => $products->firstItem(),
+                'to'           => $products->lastItem(),
+                'has_next'     => $products->hasMorePages(),
+                'has_prev'     => $products->currentPage() > 1,
+            ],
+        ]);
     }
+
+
 
     // STORE (ADMIN)
     public function store(Request $request)
@@ -44,16 +79,19 @@ class ProductController extends Controller
     }
 
     // SHOW
-    public function show(Product $product)
+    public function show(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
         return response()->json(
             $product->load('category')
         );
     }
 
     // UPDATE (ADMIN)
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+
         $data = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
@@ -79,8 +117,10 @@ class ProductController extends Controller
     }
 
     // DELETE (ADMIN)
-    public function destroy(Product $product)
+    public function destroy(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }

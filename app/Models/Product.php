@@ -25,11 +25,17 @@ class Product extends Model
         'discount' => 'decimal:2',
         'status' => 'boolean',
     ];
+    
+    protected $appends = ['final_price'];
 
     // 🔗 Relationships
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function getFinalPriceAttribute() {
+        return $this->price - ($this->price * $this->discount / 100);
     }
 }
 
