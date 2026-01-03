@@ -40,4 +40,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/clear', [App\Http\Controllers\Api\CartController::class, 'clear']);
     Route::delete('/cart/{cartItem}', [App\Http\Controllers\Api\CartController::class, 'destroy']);
 
+    // ADDRESSES
+    Route::apiResource('addresses', App\Http\Controllers\Api\AddressController::class);
+
+    // COUPONS
+    Route::post('/coupons/apply', [App\Http\Controllers\Api\CouponController::class, 'apply']);
+    // Admin routes for coupons could be protected by admin middleware, but for now putting here or under 'admin' group if it existed
+    Route::apiResource('coupons', App\Http\Controllers\Api\CouponController::class);
+
+    // CHECKOUT
+    Route::post('/checkout', [App\Http\Controllers\Api\CheckoutController::class, 'store']);
+
 });
